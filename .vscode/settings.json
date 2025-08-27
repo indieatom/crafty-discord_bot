@@ -1,0 +1,64 @@
+{
+  "typescript.preferences.useAliasesForRenames": false,
+  "typescript.preferences.includePackageJsonAutoImports": "auto",
+  "typescript.suggest.autoImports": true,
+  "typescript.suggest.completeFunctionCalls": true,
+  
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  
+  "eslint.validate": [
+    "typescript"
+  ],
+  
+  "files.exclude": {
+    "node_modules/": true,
+    "dist/": true,
+    "*.log": true
+  },
+  
+  "search.exclude": {
+    "node_modules/": true,
+    "dist/": true,
+    "package-lock.json": true,
+    "*.log": true
+  },
+  
+  "files.associations": {
+    "*.env*": "properties"
+  },
+  
+  "emmet.includeLanguages": {
+    "typescript": "javascript"
+  },
+  
+  "debug.console.fontSize": 13,
+  "debug.console.lineHeight": 18,
+  
+  "terminal.integrated.env.osx": {
+    "NODE_ENV": "development"
+  },
+  "terminal.integrated.env.linux": {
+    "NODE_ENV": "development"
+  },
+  "terminal.integrated.env.windows": {
+    "NODE_ENV": "development"
+  },
+  
+  "npm.enableScriptExplorer": true,
+  
+  "git.ignoreLimitWarning": true,
+  
+  "typescript.inlayHints.parameterNames.enabled": "all",
+  "typescript.inlayHints.parameterTypes.enabled": true,
+  "typescript.inlayHints.variableTypes.enabled": true,
+  "typescript.inlayHints.functionLikeReturnTypes.enabled": true,
+  
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/.git/**": true
+  }
+}

@@ -1,0 +1,85 @@
+# =====================================
+# Optimized Docker Ignore File  
+# =====================================
+
+# Node.js artifacts
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build output (will be created during build)
+dist/
+
+# Environment files (use env_file in docker-compose)
+.env*
+!.env.example
+
+# Logs and runtime data
+logs/
+*.log
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Testing and coverage
+coverage/
+.nyc_output/
+test/
+tests/
+__tests__/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.editorconfig
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Git and version control
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# Documentation (keep only essential)
+*.md
+!README.md
+!SETUP_GUIDE.md
+
+# Docker files (not needed inside container)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+docker-scripts.sh
+
+# Development and debug files
+debug.js
+nodemon.json
+nodemon.debug.json
+
+# Lock files (keep package-lock.json for npm ci)
+yarn.lock
+pnpm-lock.yaml
+
+# Temporary and cache files
+tmp/
+temp/
+.cache/
+*.tmp
+*.temp
+
+# Build tools config (not needed at runtime, but keep tsconfig for Docker build)
+.eslintrc*
+.prettierrc*

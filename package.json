@@ -1,0 +1,64 @@
+{
+  "name": "crafty-discord-bot",
+  "version": "1.0.0",
+  "description": "A discord bot to manage crafty-controller server",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "dev:watch": "nodemon",
+    "dev:debug": "nodemon --config nodemon.debug.json",
+    "debug": "node --inspect=0.0.0.0:9229 -r ts-node/register src/index.ts",
+    "debug:break": "node --inspect-brk=0.0.0.0:9229 -r ts-node/register src/index.ts",
+    "debug:compiled": "npm run build && node --inspect=0.0.0.0:9229 dist/index.js",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "deploy:commands": "ts-node src/utils/deploy-commands.ts",
+    "deploy:commands:debug": "node --inspect-brk=0.0.0.0:9229 -r ts-node/register src/utils/deploy-commands.ts",
+    "debug:helper": "node debug.js",
+    "kill:node": "pkill -f node || true",
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean",
+    "prestart": "npm run build",
+    "docker:build": "./docker-scripts.sh build",
+    "docker:start": "./docker-scripts.sh start",
+    "docker:stop": "./docker-scripts.sh stop",
+    "docker:restart": "./docker-scripts.sh restart",
+    "docker:logs": "./docker-scripts.sh logs",
+    "docker:logs:follow": "./docker-scripts.sh logs-follow",
+    "docker:shell": "./docker-scripts.sh shell",
+    "docker:status": "./docker-scripts.sh status",
+    "docker:clean": "./docker-scripts.sh clean",
+    "docker:pull": "./docker-scripts.sh pull",
+    "docker:deploy": "./docker-scripts.sh deploy",
+    "docker:release": "./docker-scripts.sh release",
+    "docker:release:tag": "./docker-scripts.sh release-tag"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "minecraft",
+    "crafty-controller",
+    "typescript"
+  ],
+  "author": "Jordan Rocha <70rd23@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1",
+    "axios": "^1.6.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.4",
+    "@typescript-eslint/eslint-plugin": "^6.13.2",
+    "@typescript-eslint/parser": "^6.13.2",
+    "eslint": "^8.55.0",
+    "nodemon": "^3.0.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

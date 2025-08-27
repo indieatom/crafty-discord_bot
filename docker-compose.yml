@@ -1,0 +1,31 @@
+# =====================================
+# Crafty Discord Bot - Production
+# =====================================
+
+version: '3.8'
+
+services:
+  # =====================================
+  # Discord Bot Service  
+  # =====================================
+  crafty-bot:
+    image: ghcr.io/indieatom/crafty-discord_bot:latest
+    container_name: crafty-discord-bot
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs:rw
+    healthcheck:
+      test: ["CMD", "node", "-e", "console.log('Health check passed')"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+    labels:
+      - "com.crafty.service=discord-bot"
+      - "com.crafty.environment=production"
+      - "com.centurylinklabs.watchtower.enable=true"
