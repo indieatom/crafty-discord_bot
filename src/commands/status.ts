@@ -61,61 +61,68 @@ export const statusCommand: Command = {
         }
 
         serverInfo = servers[0];
-        serverStats = await craftyClient.getServerStats(serverInfo.id);
+        serverStats = await craftyClient.getServerStats(serverInfo.server_id);
       }
 
+      // Determine server status from stats
+      const serverStatus = serverStats.running ? ServerStatus.RUNNING : 
+                          serverStats.crashed ? ServerStatus.CRASHED :
+                          serverStats.waiting_start ? ServerStatus.STARTING :
+                          ServerStatus.STOPPED;
+
       // Create status embed
-      const statusEmoji = getStatusEmoji(serverInfo.status);
-      const statusColor = getStatusColor(serverInfo.status);
+      const statusEmoji = getStatusEmoji(serverStatus);
+      const statusColor = getStatusColor(serverStatus);
 
       const embed = new EmbedBuilder()
         .setColor(statusColor)
-        .setTitle(`${statusEmoji} ${serverInfo.name}`)
-        .setDescription(`**Status:** ${serverInfo.status.toUpperCase()}`)
+        .setTitle(`${statusEmoji} ${serverInfo.server_name}`)
+        .setDescription(`**Status:** ${serverStatus.toUpperCase()}`)
         .addFields(
           {
             name: '📊 Server Info',
             value: [
               `**Type:** ${serverInfo.type}`,
-              `**Version:** ${serverInfo.version}`,
-              `**Address:** ${serverInfo.ip}:${serverInfo.port}`,
+              `**Executable:** ${serverInfo.executable}`,
+              `**Version:** ${serverStats.version}`,
+              `**Address:** ${serverInfo.server_ip}:${serverInfo.server_port}`,
             ].join('\n'),
             inline: true
           },
           {
             name: '👥 Players',
             value: [
-              `**Online:** ${serverInfo.players.online}/${serverInfo.players.max}`,
-              `**Usage:** ${formatPercentage(serverInfo.players.online, serverInfo.players.max)}`,
+              `**Online:** ${serverStats.online}/${serverStats.max}`,
+              `**Usage:** ${formatPercentage(serverStats.online, serverStats.max)}`,
             ].join('\n'),
             inline: true
           },
           {
             name: '⏱️ Uptime',
-            value: serverInfo.uptime > 0 ? formatUptime(serverInfo.uptime) : 'Not running',
+            value: serverStats.running ? `Started: ${serverStats.started}` : 'Not running',
             inline: true
           },
           {
             name: '💾 Resources',
             value: [
-              `**CPU:** ${serverStats.cpu_usage.toFixed(1)}%`,
-              `**Memory:** ${formatBytes(serverStats.memory_usage)}/${formatBytes(serverStats.memory_total)}`,
-              `**Disk:** ${formatBytes(serverStats.disk_usage)}/${formatBytes(serverStats.disk_total)}`,
+              `**CPU:** ${serverStats.cpu.toFixed(1)}%`,
+              `**Memory:** ${serverStats.mem} (${serverStats.mem_percent}%)`,
+              `**World Size:** ${serverStats.world_size}`,
             ].join('\n'),
             inline: true
           },
           {
             name: '🌐 Network',
             value: [
-              `**In:** ${formatBytes(serverStats.network_in)}`,
-              `**Out:** ${formatBytes(serverStats.network_out)}`,
-              `**TPS:** ${serverStats.tps?.toFixed(1) || 'N/A'}`,
+              `**Port:** ${serverStats.server_port}`,
+              `**Ping:** ${serverStats.int_ping_results}`,
+              `**Description:** ${serverStats.desc}`,
             ].join('\n'),
             inline: true
           },
           {
             name: '🆔 Server ID',
-            value: serverInfo.id,
+            value: serverInfo.server_id,
             inline: true
           }
         )
@@ -126,7 +133,7 @@ export const statusCommand: Command = {
         .setTimestamp();
 
       await interaction.editReply({ embeds: [embed] });
-      logger.info(`Status command executed for server ${serverInfo.id} by ${interaction.user.tag}`);
+      logger.info(`Status command executed for server ${serverInfo.server_id} by ${interaction.user.tag}`);
 
     } catch (error: any) {
       logger.error('Status command failed:', error);

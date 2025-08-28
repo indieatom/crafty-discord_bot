@@ -91,11 +91,16 @@ export const serverCommand: Command = {
           await interaction.editReply({ embeds: [noServersEmbed] });
           return;
         }
-        targetServerId = servers[0].id;
-        serverName = servers[0].name;
+        targetServerId = servers[0].server_id;
+        serverName = servers[0].server_name;
       } else {
         const serverInfo = await craftyClient.getServerInfo(targetServerId);
-        serverName = serverInfo.name;
+        serverName = serverInfo.server_name;
+      }
+
+      // Ensure targetServerId is not null at this point
+      if (!targetServerId) {
+        throw new Error('No server ID available');
       }
 
       // Execute the action

@@ -7,6 +7,7 @@ A Discord bot in TypeScript to manage Minecraft servers through Crafty Controlle
 ### ✅ Implemented
 - 🏓 **Ping Command** - Bot connectivity and latency testing
 - 📊 **Server Status** - Complete information about Minecraft server
+- 📋 **Servers List** - List all servers with IDs and current status
 - 🎮 **Server Control** - Start, stop, restart and force kill servers
 - 🔧 **HTTP Client** - Complete communication with Crafty Controller API
 - 📝 **Logging System** - Structured logs with different levels
@@ -167,27 +168,33 @@ Shows detailed information about the Minecraft server.
 **Usage:**
 ```
 /status
-/status server:server_001
+/status server:7242b0e5-bdb2-44c2-815c-285d5605cf67
 ```
 
 **Response (online server):**
 ```
-🟢 Minecraft Server 1
+🟢 Prominence II
 Status: RUNNING
 
 📊 Server Info
 Type: minecraft-java
-Version: 1.20.1  
-Address: 0.0.0.0:25565
+Executable: fabric-server-launcher.jar
+Version: 1.20.1
+Address: 127.0.0.1:25567
 
-👥 Players: 3/20 (15%)
-⏱️ Uptime: 2h 0m 0s
+👥 Players: 0/6 (0%)
+⏱️ Uptime: Started: 2025-08-28 02:02:44
 💾 Resources
-CPU: 25.5%
-Memory: 2.0GB/4.0GB
-Disk: 5.0GB/10.0GB
+CPU: 2.8%
+Memory: 5.4GB (59%)
+World Size: 1.0GB
 
-🆔 Server ID: server_001
+🌐 Network
+Port: 25567
+Ping: True
+Description: A ~BAIT~ Minecraft Server
+
+🆔 Server ID: 7242b0e5-bdb2-44c2-815c-285d5605cf67
 ```
 
 **Parameters:**
@@ -203,6 +210,52 @@ Disk: 5.0GB/10.0GB
 
 ---
 
+### 📋 **/servers Command**
+Lists all Minecraft servers configured in Crafty Controller with their IDs and current status.
+
+**Usage:**
+```
+/servers
+```
+
+**Response:**
+```
+🖥️ Servidores do Crafty Controller
+Total de servidores: 3
+
+🟢 Executando (1)
+• Prominence II (ID: 7242b0e5-bdb2-44c2-815c-285d5605cf67)
+  🌐 127.0.0.1:25567 | 👥 0/6 jogadores | ⏱️ Started: 2025-08-28 02:02:44
+
+🔴 Parado (2)
+• Integrated MC (ID: f64ef5b5-743b-4817-aff4-a1e3e933e27d)
+  🌐 127.0.0.1:25565 | 👥 N/A jogadores | ⏱️ Não iniciado
+
+• Infinity Server (ID: 45d094fd-b82a-46fe-b540-dee61fc056e2)
+  🌐 mine.rochajg.dev:25564 | 👥 N/A jogadores | ⏱️ Não iniciado
+
+📊 Resumo
+🟢 Executando: 1 | 🔴 Parados: 2 | 🟡 Outros: 0
+```
+
+**Features:**
+- Lists all configured servers
+- Shows current status with color-coded emojis
+- Displays player count and uptime for each server
+- Groups servers by status
+- Provides summary statistics
+- Available to all users
+
+**Possible status groups:**
+- 🟢 **Executando** - Servers currently online
+- 🔴 **Parado** - Servers currently offline
+- 🟡 **Iniciando** - Servers starting up
+- 🟡 **Parando** - Servers stopping
+- 💥 **Crashado** - Servers that crashed
+- ❓ **Desconhecido** - Undetermined status
+
+---
+
 ### 🎮 **/server Command**
 Controls the Minecraft server (administrative commands).
 
@@ -211,7 +264,7 @@ Controls the Minecraft server (administrative commands).
 #### **🟢 /server start**
 ```
 /server start
-/server start server:server_001
+/server start server:7242b0e5-bdb2-44c2-815c-285d5605cf67
 ```
 **Function:** Starts the Minecraft server  
 **Permissions:** Requires administrative role  
@@ -220,7 +273,7 @@ Controls the Minecraft server (administrative commands).
 #### **🔴 /server stop**
 ```
 /server stop
-/server stop server:server_001
+/server stop server:7242b0e5-bdb2-44c2-815c-285d5605cf67
 ```
 **Function:** Gracefully stops the server  
 **Behavior:** Saves world, disconnects players, stops process  
@@ -229,7 +282,7 @@ Controls the Minecraft server (administrative commands).
 #### **🔄 /server restart**
 ```
 /server restart  
-/server restart server:server_001
+/server restart server:7242b0e5-bdb2-44c2-815c-285d5605cf67
 ```
 **Function:** Restarts the server (stop + start)  
 **Common use:** Apply configurations, resolve issues  
@@ -237,7 +290,7 @@ Controls the Minecraft server (administrative commands).
 
 #### **💀 /server kill**
 ```
-/server kill server:server_001
+/server kill server:7242b0e5-bdb2-44c2-815c-285d5605cf67
 ```
 **Function:** Forces immediate stop (emergency)  
 **⚠️ Warning:** May cause unsaved data loss  
@@ -255,8 +308,8 @@ Controls the Minecraft server (administrative commands).
 **Success Responses:**
 ```
 ▶️ Server Started
-Minecraft Server 1 has been started successfully.
-🆔 Server ID: server_001
+Prominence II has been started successfully.
+🆔 Server ID: 7242b0e5-bdb2-44c2-815c-285d5605cf67
 👤 Executed by: @username  
 ⚡ Action: START
 ```
