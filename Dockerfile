@@ -17,13 +17,12 @@ WORKDIR /app
 # Copy package files first for better caching
 COPY package*.json ./
 
-# Optimize npm ci with performance flags
-RUN npm ci \
+# Optimize npm install with performance flags
+RUN npm install \
     --prefer-offline \
     --no-audit \
     --no-fund \
-    --include=dev \
-    --frozen-lockfile
+    --include=dev
 
 # Copy source code (after dependencies for better cache)
 COPY . .
@@ -49,12 +48,12 @@ RUN apk add --no-cache ca-certificates tzdata
 COPY package*.json ./
 
 # Install ONLY production dependencies directly (much faster)
-RUN npm ci \
+RUN npm install \
     --prefer-offline \
     --no-audit \
     --no-fund \
     --omit=dev \
-    --frozen-lockfile && \
+    --production && \
     npm cache clean --force
 
 # Copy built application
