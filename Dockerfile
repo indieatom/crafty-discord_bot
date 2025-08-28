@@ -54,8 +54,7 @@ RUN npm ci \
     --no-audit \
     --no-fund \
     --omit=dev \
-    --frozen-lockfile && \
-    npm cache clean --force
+    --frozen-lockfile
 
 # Copy built application
 COPY --from=builder --chown=botuser:nodejs /app/dist ./dist
