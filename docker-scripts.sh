@@ -31,20 +31,39 @@ check_buildx() {
     fi
 }
 
-# Build function with automatic fallback
+# Build function with automatic fallback and multi-arch support
 docker_build_optimized() {
     local target="$1"
     local tag="$2"
+    local platforms="${3:-linux/$(uname -m | sed 's/x86_64/amd64/')}"
     
     if check_buildx; then
         log "Using Docker Buildx for maximum optimization..." $BLUE
-        DOCKER_BUILDKIT=1 docker buildx build \
-            --target "$target" \
-            --load \
-            --cache-from type=local,src=/tmp/.buildx-cache \
-            --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
-            -t "$tag" \
-            .
+        log "Building for platforms: $platforms" $BLUE
+        
+        # Use --load for single platform builds, --push for multi-platform
+        if [[ "$platforms" == *","* ]]; then
+            # Multi-platform build - must push to registry
+            log "Multi-platform build detected - building for registry..." $YELLOW
+            DOCKER_BUILDKIT=1 docker buildx build \
+                --target "$target" \
+                --platform "$platforms" \
+                --cache-from type=local,src=/tmp/.buildx-cache \
+                --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
+                -t "$tag" \
+                --push \
+                .
+        else
+            # Single platform build - can load locally
+            DOCKER_BUILDKIT=1 docker buildx build \
+                --target "$target" \
+                --platform "$platforms" \
+                --load \
+                --cache-from type=local,src=/tmp/.buildx-cache \
+                --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
+                -t "$tag" \
+                .
+        fi
         
         # Move cache to avoid growing cache
         rm -rf /tmp/.buildx-cache
@@ -52,6 +71,7 @@ docker_build_optimized() {
     else
         log "Using standard Docker build with Dockerfile optimizations..." $YELLOW
         log "Note: Still benefits from optimized npm flags and layer caching!" $CYAN
+        log "Warning: Multi-architecture builds require Docker Buildx!" $RED
         docker build \
             --target "$target" \
             -t "$tag" \
@@ -119,6 +139,7 @@ show_help() {
     echo "Commands:"
     echo "  check          Check Docker optimization status"
     echo "  build          Build Docker image locally"
+    echo "  build-multiarch Build for multiple architectures (AMD64 + ARM64)"
     echo "  start          Start production bot"
     echo "  stop           Stop bot service"
     echo "  restart        Restart bot service"
@@ -136,9 +157,10 @@ show_help() {
     echo ""
     echo "Examples:"
     echo "  $0 build              # Build local image"
+    echo "  $0 build-multiarch    # Build for AMD64 + ARM64 (pushes to registry)"
     echo "  $0 start              # Start production bot"
-    echo "  $0 release            # Build and push to GHCR"
-    echo "  $0 release-tag v1.0.0 # Release with version tag"
+    echo "  $0 release            # Build and push to GHCR (multi-arch)"
+    echo "  $0 release-tag v1.0.0 # Release with version tag (multi-arch)"
 }
 
 # Build Docker image locally
@@ -146,6 +168,23 @@ build() {
     log "Building Docker image locally..." $BLUE
     docker_build_optimized "production" "$IMAGE_NAME:latest"
     log "Build completed successfully!" $GREEN
+}
+
+# Build for multiple architectures (requires registry push)
+build_multiarch() {
+    log "Building Docker image for multiple architectures..." $BLUE
+    log "Note: Multi-arch builds will be pushed to registry automatically" $YELLOW
+    
+    # Check if logged in to registry
+    if ! docker info 2>/dev/null | grep -q "Username:"; then
+        log "Please login to container registry first:" $RED
+        log "echo \$GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin" $YELLOW
+        exit 1
+    fi
+    
+    docker_build_optimized "production" "$IMAGE_NAME:latest" "linux/amd64,linux/arm64"
+    log "Multi-architecture build completed successfully!" $GREEN
+    log "Images available for: AMD64 (x86_64) and ARM64 (Apple Silicon)" $GREEN
 }
 
 # Start production
@@ -247,31 +286,32 @@ deploy() {
     docker-compose logs -f
 }
 
-# Release to GitHub Container Registry
+# Release to GitHub Container Registry with multi-arch support
 release() {
     log "Building and releasing to GitHub Container Registry..." $BLUE
+    log "Building for multiple architectures: AMD64 + ARM64" $BLUE
     
-    # Build image
-    docker_build_optimized "production" "$IMAGE_NAME:latest"
+    # Check if logged in to registry
+    if ! docker info 2>/dev/null | grep -q "Username:"; then
+        log "Please login to container registry first:" $RED
+        log "echo \$GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin" $YELLOW
+        exit 1
+    fi
     
-    # Tag with timestamp
+    # Build and push multi-architecture image
+    docker_build_optimized "production" "$IMAGE_NAME:latest" "linux/amd64,linux/arm64"
+    
+    # Tag with timestamp for multi-arch too
     local timestamp=$(date +%Y%m%d-%H%M%S)
-    docker tag $IMAGE_NAME:latest $IMAGE_NAME:$timestamp
+    log "Creating timestamped multi-arch tag: $timestamp" $YELLOW
+    docker_build_optimized "production" "$IMAGE_NAME:$timestamp" "linux/amd64,linux/arm64"
     
-    # Push latest
-    log "Pushing latest tag..." $YELLOW
-    docker push $IMAGE_NAME:latest
-    
-    # Push timestamped version
-    log "Pushing timestamped tag: $timestamp" $YELLOW
-    docker push $IMAGE_NAME:$timestamp
-    
-    log "Release completed successfully!" $GREEN
-    log "Image available at: $IMAGE_NAME:latest" $GREEN
-    log "Timestamped version: $IMAGE_NAME:$timestamp" $GREEN
+    log "Multi-architecture release completed successfully!" $GREEN
+    log "Images available at: $IMAGE_NAME:latest (AMD64 + ARM64)" $GREEN
+    log "Timestamped version: $IMAGE_NAME:$timestamp (AMD64 + ARM64)" $GREEN
 }
 
-# Release with specific tag
+# Release with specific tag and multi-arch support
 release_tag() {
     local tag="${1:-latest}"
     
@@ -280,22 +320,25 @@ release_tag() {
         exit 1
     fi
     
-    log "Building and releasing version $tag..." $BLUE
+    log "Building and releasing version $tag for multiple architectures..." $BLUE
     
-    # Build image
-    docker_build_optimized "production" "$IMAGE_NAME:$tag"
-    docker tag $IMAGE_NAME:$tag $IMAGE_NAME:latest
+    # Check if logged in to registry
+    if ! docker info 2>/dev/null | grep -q "Username:"; then
+        log "Please login to container registry first:" $RED
+        log "echo \$GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin" $YELLOW
+        exit 1
+    fi
     
-    # Push both tags
-    log "Pushing version tag: $tag" $YELLOW
-    docker push $IMAGE_NAME:$tag
+    # Build and push multi-architecture images
+    log "Building version tag: $tag (AMD64 + ARM64)" $YELLOW
+    docker_build_optimized "production" "$IMAGE_NAME:$tag" "linux/amd64,linux/arm64"
     
-    log "Pushing latest tag..." $YELLOW  
-    docker push $IMAGE_NAME:latest
+    log "Building latest tag (AMD64 + ARM64)..." $YELLOW  
+    docker_build_optimized "production" "$IMAGE_NAME:latest" "linux/amd64,linux/arm64"
     
-    log "Release completed successfully!" $GREEN
-    log "Version available at: $IMAGE_NAME:$tag" $GREEN
-    log "Latest updated: $IMAGE_NAME:latest" $GREEN
+    log "Multi-architecture release completed successfully!" $GREEN
+    log "Version available at: $IMAGE_NAME:$tag (AMD64 + ARM64)" $GREEN
+    log "Latest updated: $IMAGE_NAME:latest (AMD64 + ARM64)" $GREEN
 }
 
 # Main command dispatcher
@@ -305,6 +348,9 @@ case "${1:-help}" in
         ;;
     "build")
         build
+        ;;
+    "build-multiarch")
+        build_multiarch
         ;;
     "start")
         start_production
