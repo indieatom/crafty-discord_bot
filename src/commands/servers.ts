@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, Client, EmbedBuilder } from 'discord.js';
 import { Command, CommandCategory, EMBED_COLORS } from '../types/discord';
-import { CraftyClient } from '../services';
+import { CraftyClient, ReactionManager } from '../services';
 import { getLogger, formatUptime, formatBytes, formatPercentage } from '../utils';
 import { ServerStatus } from '../types/crafty';
 
@@ -128,8 +128,43 @@ export const serversCommand: Command = {
         inline: false
       });
 
-      await interaction.editReply({ embeds: [embed] });
+      const reply = await interaction.editReply({ embeds: [embed] });
       logger.info(`Servers command executed by ${interaction.user.tag} - Found ${servers.length} servers`);
+
+      // Add interactive reactions for server management
+      const reactionManager = (client as any).reactionManager as ReactionManager;
+      if (reactionManager && servers.length > 0) {
+        // Add general server management reactions
+        const actions = [
+          { emoji: '🔄', action: 'refresh_status', description: 'Atualizar lista de servidores' },
+          { emoji: '📊', action: 'show_summary', description: 'Ver resumo detalhado' }
+        ];
+
+        await reactionManager.addReactions(
+          reply,
+          actions,
+          interaction.user.id,
+          undefined, // No specific server
+          10 // 10 minutes expiration
+        );
+
+        // Add help text about reactions
+        const helpEmbed = new EmbedBuilder()
+          .setColor(EMBED_COLORS.INFO)
+          .setTitle('🎮 Controles de Lista')
+          .setDescription('Clique nas reações para gerenciar a lista:')
+          .addFields(
+            actions.map(action => ({
+              name: action.emoji,
+              value: action.description,
+              inline: true
+            }))
+          )
+          .setFooter({ text: 'Para controlar um servidor específico, use /status [server_id]' })
+          .setTimestamp();
+
+        await interaction.followUp({ embeds: [helpEmbed], ephemeral: true });
+      }
 
     } catch (error: any) {
       logger.error('Servers command failed:', error);

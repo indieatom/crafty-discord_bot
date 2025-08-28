@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, Client, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
 import { Command, CommandCategory, EMBED_COLORS } from '../types/discord';
-import { CraftyClient } from '../services';
+import { CraftyClient, ReactionManager } from '../services';
 import { getLogger } from '../utils';
 
 const logger = getLogger();
@@ -103,6 +103,14 @@ export const serverCommand: Command = {
         throw new Error('No server ID available');
       }
 
+      // Check if action requires confirmation
+      const requiresConfirmation = ['restart', 'kill'].includes(subcommand);
+      
+      if (requiresConfirmation) {
+        await requestConfirmation(interaction, client, subcommand, targetServerId, serverName);
+        return;
+      }
+
       // Execute the action
       let actionText = '';
       let actionEmoji = '';
@@ -118,18 +126,6 @@ export const serverCommand: Command = {
           await craftyClient.stopServer(targetServerId);
           actionText = 'stopped';
           actionEmoji = '⏹️';
-          break;
-        
-        case 'restart':
-          await craftyClient.restartServer(targetServerId);
-          actionText = 'restarted';
-          actionEmoji = '🔄';
-          break;
-        
-        case 'kill':
-          await craftyClient.killServer(targetServerId);
-          actionText = 'force killed';
-          actionEmoji = '💀';
           break;
         
         default:
@@ -164,7 +160,7 @@ export const serverCommand: Command = {
         })
         .setTimestamp();
 
-      await interaction.editReply({ embeds: [successEmbed] });
+      const reply = await interaction.editReply({ embeds: [successEmbed] });
 
       logger.info(`Server ${subcommand} command executed successfully`, {
         serverId: targetServerId,
@@ -172,6 +168,22 @@ export const serverCommand: Command = {
         user: interaction.user.tag,
         guild: interaction.guild?.name
       });
+
+      // Add interactive reactions for continued management
+      const reactionManager = (client as any).reactionManager as ReactionManager;
+      if (reactionManager) {
+        // Get current server stats to determine available actions
+        const serverStats = await craftyClient.getServerStats(targetServerId);
+        const actions = ReactionManager.getServerActionReactions(serverStats.running);
+        
+        await reactionManager.addReactions(
+          reply,
+          actions,
+          interaction.user.id,
+          targetServerId,
+          10 // 10 minutes expiration
+        );
+      }
 
     } catch (error: any) {
       logger.error('Server command failed:', error);
@@ -197,3 +209,81 @@ export const serverCommand: Command = {
     }
   }
 };
+
+/**
+ * Request confirmation for critical actions
+ */
+async function requestConfirmation(
+  interaction: ChatInputCommandInteraction,
+  client: Client,
+  action: string,
+  serverId: string,
+  serverName: string
+): Promise<void> {
+    const actionEmojis: Record<string, string> = {
+      restart: '🔄',
+      kill: '💀'
+    };
+
+    const actionTexts: Record<string, string> = {
+      restart: 'reiniciar',
+      kill: 'forçar parada (kill)'
+    };
+
+    const warningMessages: Record<string, string> = {
+      restart: 'Esta ação irá reiniciar o servidor, desconectando todos os jogadores temporariamente.',
+      kill: '⚠️ **ATENÇÃO**: Esta ação irá forçar a parada do servidor, podendo causar corrupção de dados!'
+    };
+
+    const confirmationEmbed = new EmbedBuilder()
+      .setColor(action === 'kill' ? EMBED_COLORS.ERROR : EMBED_COLORS.WARNING)
+      .setTitle(`${actionEmojis[action]} Confirmação Necessária`)
+      .setDescription(`Você está prestes a **${actionTexts[action]}** o servidor:`)
+      .addFields(
+        {
+          name: '🖥️ Servidor',
+          value: `**${serverName}** (\`${serverId}\`)`,
+          inline: false
+        },
+        {
+          name: '⚠️ Aviso',
+          value: warningMessages[action],
+          inline: false
+        },
+        {
+          name: '🎮 Confirmação',
+          value: 'Clique em ✅ para confirmar ou ❌ para cancelar',
+          inline: false
+        }
+      )
+      .setFooter({ text: 'Esta confirmação expira em 30 segundos' })
+      .setTimestamp();
+
+    const confirmationReply = await interaction.editReply({ embeds: [confirmationEmbed] });
+
+    // Add confirmation reactions
+    const reactionManager = (client as any).reactionManager as ReactionManager;
+    if (reactionManager) {
+      const confirmationActions = ReactionManager.getConfirmationReactions();
+      
+      // Store the action context for later execution
+      const actionContext = {
+        action,
+        serverId,
+        serverName,
+        originalInteraction: interaction
+      };
+
+      // Store in reaction manager context (extend the context)
+      (reactionManager as any).pendingActions = (reactionManager as any).pendingActions || new Map();
+      (reactionManager as any).pendingActions.set(confirmationReply.id, actionContext);
+
+      await reactionManager.addReactions(
+        confirmationReply,
+        confirmationActions,
+        interaction.user.id,
+        serverId,
+        0.5 // 30 seconds expiration
+      );
+    }
+}

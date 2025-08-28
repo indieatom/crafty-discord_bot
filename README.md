@@ -26,13 +26,14 @@ docker-compose logs -f
 
 ## 🔧 Essential Commands
 
-| Command             | Description       | Example         |
-| ------------------- | ----------------- | --------------- |
-| **`/ping`**         | Test connectivity | `/ping`         |
-| **`/status`**       | Server status     | `/status`       |
-| **`/servers`**      | List all servers  | `/servers`      |
-| **`/server start`** | Start server      | `/server start` |
-| **`/server stop`**  | Stop server       | `/server stop`  |
+| Command             | Description                    | Example         |
+| ------------------- | ------------------------------ | --------------- |
+| **`/ping`**         | Test connectivity              | `/ping`         |
+| **`/menu`**         | 🆕 Interactive control panel  | `/menu`         |
+| **`/status`**       | Server status + emoji controls| `/status`       |
+| **`/servers`**      | List all servers + interactions| `/servers`      |
+| **`/server start`** | Start server                   | `/server start` |
+| **`/server stop`**  | Stop server                    | `/server stop`  |
 
 ## ⚙️ Configuration (.env)
 
@@ -60,6 +61,10 @@ LOG_LEVEL=info
 - 🎮 Server control (start/stop/restart)
 - 📋 List all servers with details
 - 🔧 Complete Crafty API integration
+- 🆕 **Interactive emoji-based controls**
+- 🆕 **Smart confirmation system for critical actions**
+- 🆕 **Unified menu interface with real-time updates**
+- 🆕 **Context-aware reactions with automatic expiration**
 
 ### 🚧 In Development
 - 👥 Detailed player information
@@ -227,29 +232,62 @@ npm run deploy:commands:debug  # Debug command deployment
 - Shows latency and uptime
 - Available to all users
 
-### `/status` - Server Status
+### `/menu` - 🆕 Interactive Control Panel
+```
+/menu
+```
+- **Unified control interface** with emoji-based interactions
+- **Real-time server overview** - counts of online/offline servers
+- **Quick actions** via emoji reactions:
+  - 📋 **Server List** - View all servers with IDs
+  - 📊 **Detailed Summary** - Complete status of all servers
+  - ⚡ **Quick Status** - Fast status check of first server
+  - 🔄 **Refresh Menu** - Update all information
+  - ❓ **Help System** - Complete usage guide
+- **Auto-expiration** - Reactions expire after 15 minutes
+- **User-specific** - Only command executor can use reactions
+
+### `/status` - Server Status + 🆕 Interactive Controls
 ```
 /status [server:SERVER_ID]
 ```
 - Shows detailed Minecraft server information
-- States: 🟢 RUNNING | 🔴 STOPPED | 🟡 STARTING/STOPPING | 💥 CRASHED
+- States: 🟢 RUNNING | 🔴 STOPPED | 🟡 STARTING/STOPPING | 💥 CRASHED  
 - Includes: online players, uptime, resources (CPU/memory), network info
+- **🆕 Interactive emoji controls:**
+  - ▶️ **Start server** (if stopped)
+  - ⏹️ **Stop server** (if running) 
+  - 🔄 **Restart server** (if running, with confirmation)
+  - 👥 **Show online players** (if running)
+  - 🔄 **Refresh status** - Update information
+- **Smart reactions** - Available actions change based on server state
+- **Auto-expiration** - Controls expire after 15 minutes
 
-### `/servers` - Server List
+### `/servers` - Server List + 🆕 Interactive Options  
 ```
 /servers
 ```
 - Lists all servers configured in Crafty Controller
 - Groups by status with statistical summary
 - Shows IDs, addresses, online players
+- **🆕 Interactive emoji controls:**
+  - 🔄 **Refresh List** - Update server information  
+  - 📊 **Show Summary** - Detailed overview of all servers
+- **Auto-expiration** - Controls expire after 10 minutes
 
-### `/server` - Server Control ⚠️ Admin
+### `/server` - Server Control ⚠️ Admin + 🆕 Smart Confirmations
 ```
 /server start [server:SERVER_ID]    # Start server
-/server stop [server:SERVER_ID]     # Stop server
-/server restart [server:SERVER_ID]  # Restart server
-/server kill [server:SERVER_ID]     # Force stop (emergency)
+/server stop [server:SERVER_ID]     # Stop server  
+/server restart [server:SERVER_ID]  # Restart server (requires confirmation)
+/server kill [server:SERVER_ID]     # Force stop (requires confirmation)
 ```
+**🆕 Safety Features:**
+- **Smart confirmations** - Critical actions (restart/kill) require ✅/❌ emoji confirmation
+- **Timeout protection** - Confirmations expire after 30 seconds
+- **Visual warnings** - Clear alerts about potential data loss
+- **Post-action controls** - Interactive management after successful execution
+
 **Required permissions:**
 - Role defined in `ADMIN_ROLE_ID`
 - "Manage Server" permission in Discord
@@ -298,3 +336,39 @@ npm run docker:deploy        # Complete deployment
 ```
 
 **Official image:** `ghcr.io/indieatom/crafty-discord_bot:latest`
+
+## 🎮 Interactive Emoji System
+
+### Overview
+The bot now features a comprehensive **emoji-based interaction system** that transforms static command responses into dynamic, controllable interfaces.
+
+### Key Features
+- **👤 User-Specific Controls** - Only the command executor can use emoji reactions
+- **⏰ Auto-Expiration** - Reactions automatically expire (10-15 minutes)
+- **🔄 Smart Cooldowns** - Prevents spam with per-user, per-action cooldowns
+- **🔒 Safety Confirmations** - Critical actions require explicit ✅/❌ confirmation
+- **📝 Comprehensive Logging** - All emoji interactions are logged for security
+
+### Available Emoji Actions
+
+| Emoji | Action | Description | Available In |
+|-------|--------|-------------|--------------|
+| ▶️ | Start Server | Start a stopped server | `/status`, `/menu` |
+| ⏹️ | Stop Server | Stop a running server | `/status`, `/menu` |
+| 🔄 | Restart Server | Restart with confirmation | `/status`, `/menu` |
+| 💀 | Kill Server | Force stop with confirmation | `/server kill` |
+| 👥 | Show Players | Display online players | `/status` |
+| 📊 | Show Summary | Detailed server overview | `/servers`, `/menu` |
+| 📋 | Server List | Quick server list | `/menu` |
+| ⚡ | Quick Status | Fast status check | `/menu` |
+| 🔄 | Refresh | Update information | All interactive commands |
+| ❓ | Help | Usage guide | `/menu` |
+| ✅ | Confirm | Confirm critical actions | Confirmation dialogs |
+| ❌ | Cancel | Cancel critical actions | Confirmation dialogs |
+
+### Security & Safety
+- **Permission Inheritance** - Emoji actions respect the same permissions as slash commands
+- **Confirmation System** - Destructive actions (restart/kill) always require confirmation
+- **Rate Limiting** - 5-second cooldown between emoji actions per user
+- **Session Management** - Each reaction session is isolated and tracked
+- **Graceful Degradation** - System continues working even if emoji features fail

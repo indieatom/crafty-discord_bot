@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, Client, EmbedBuilder } from 'discord.js';
 import { Command, CommandCategory, EMBED_COLORS } from '../types/discord';
-import { CraftyClient } from '../services';
+import { CraftyClient, ReactionManager } from '../services';
 import { getLogger, formatUptime, formatBytes, formatPercentage } from '../utils';
 import { ServerStatus } from '../types/crafty';
 
@@ -132,8 +132,38 @@ export const statusCommand: Command = {
         })
         .setTimestamp();
 
-      await interaction.editReply({ embeds: [embed] });
+      const reply = await interaction.editReply({ embeds: [embed] });
       logger.info(`Status command executed for server ${serverInfo.server_id} by ${interaction.user.tag}`);
+
+      // Add interactive reactions
+      const reactionManager = (client as any).reactionManager as ReactionManager;
+      if (reactionManager) {
+        const actions = ReactionManager.getServerActionReactions(serverStatus === ServerStatus.RUNNING);
+        await reactionManager.addReactions(
+          reply,
+          actions,
+          interaction.user.id,
+          serverInfo.server_id,
+          15 // 15 minutes expiration
+        );
+
+        // Add help text about reactions
+        const helpEmbed = new EmbedBuilder()
+          .setColor(EMBED_COLORS.INFO)
+          .setTitle('🎮 Controles Interativos')
+          .setDescription('Clique nas reações abaixo para controlar o servidor:')
+          .addFields(
+            actions.map(action => ({
+              name: action.emoji,
+              value: action.description,
+              inline: true
+            }))
+          )
+          .setFooter({ text: 'As reações expiram em 15 minutos' })
+          .setTimestamp();
+
+        await interaction.followUp({ embeds: [helpEmbed], ephemeral: true });
+      }
 
     } catch (error: any) {
       logger.error('Status command failed:', error);

@@ -1,12 +1,14 @@
 import { Client, GatewayIntentBits, Events, Collection } from 'discord.js';
 import { Config, getLogger } from './utils';
 import { Command, LogLevel } from './types';
+import { ReactionManager } from './services';
 
 class CraftyDiscordBot {
   private client: Client;
   private config: Config;
   private logger = getLogger();
   private commands: Collection<string, Command> = new Collection();
+  private reactionManager: ReactionManager;
 
   constructor() {
     // Initialize configuration
@@ -22,11 +24,18 @@ class CraftyDiscordBot {
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildMessageReactions,
       ],
     });
 
     this.setupEventHandlers();
     this.loadCommands();
+    
+    // Initialize reaction manager
+    this.reactionManager = new ReactionManager(this.client);
+    
+    // Add reaction manager to client for access in commands
+    (this.client as any).reactionManager = this.reactionManager;
   }
 
   private setupEventHandlers(): void {
@@ -65,6 +74,35 @@ class CraftyDiscordBot {
           await interaction.reply({ content: errorMessage, ephemeral: true });
         }
       }
+    });
+
+    // Handle message reactions
+    this.client.on(Events.MessageReactionAdd, async (reaction, user) => {
+      // Handle partial reactions
+      if (reaction.partial) {
+        try {
+          await reaction.fetch();
+        } catch (error) {
+          this.logger.error('Failed to fetch partial reaction:', error);
+          return;
+        }
+      }
+
+      await this.reactionManager.handleReaction(reaction, user, 'add');
+    });
+
+    this.client.on(Events.MessageReactionRemove, async (reaction, user) => {
+      // Handle partial reactions
+      if (reaction.partial) {
+        try {
+          await reaction.fetch();
+        } catch (error) {
+          this.logger.error('Failed to fetch partial reaction:', error);
+          return;
+        }
+      }
+
+      await this.reactionManager.handleReaction(reaction, user, 'remove');
     });
 
     // Handle process termination gracefully
@@ -144,6 +182,10 @@ class CraftyDiscordBot {
 
   public getCommands(): Collection<string, Command> {
     return this.commands;
+  }
+
+  public getReactionManager(): ReactionManager {
+    return this.reactionManager;
   }
 }
 

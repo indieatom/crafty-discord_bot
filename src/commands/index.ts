@@ -3,6 +3,7 @@ import { pingCommand } from './ping';
 import { statusCommand } from './status';
 import { serverCommand } from './server';
 import { serversCommand } from './servers';
+import { menuCommand } from './menu';
 
 // Export all commands
 export const commands: Command[] = [
@@ -10,6 +11,7 @@ export const commands: Command[] = [
   statusCommand,
   serverCommand,
   serversCommand,
+  menuCommand,
 ];
 
 // Export individual commands
@@ -17,3 +19,4 @@ export * from './ping';
 export * from './status';
 export * from './server';
 export * from './servers';
+export * from './menu';
